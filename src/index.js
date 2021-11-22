@@ -223,7 +223,7 @@ async function fetchGreeting() {
       document.getElementById('new-user').remove();
     }
     if (document.getElementById('your-avatar')) {
-      document.getElementById('your-avatar').style.display = 'block';
+      document.getElementById('your-avatar').style.display = 'flex';
     }
 
     if (document.getElementById('nft-image')) {
