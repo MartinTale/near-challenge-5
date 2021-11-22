@@ -24672,7 +24672,7 @@ async function fetchGreeting() {
     }
 
     if (document.getElementById('your-avatar')) {
-      document.getElementById('your-avatar').style.display = 'block';
+      document.getElementById('your-avatar').style.display = 'flex';
     }
 
     if (document.getElementById('nft-image')) {
@@ -24714,7 +24714,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "55397" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "62164" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
