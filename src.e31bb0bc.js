@@ -24493,10 +24493,25 @@ const submitButton = document.querySelector("form button");
 const avatarContainer = document.getElementById("avatar-container");
 let currentAvatar = Date.now();
 let currentColor = '#1e1e1e';
+let nftImageUrl = null;
 
 document.getElementById("refresh-avatar").onclick = e => {
   e.preventDefault();
   setAvatar(Date.now());
+};
+
+document.getElementById('download').onclick = async () => {
+  if (nftImageUrl) {
+    const image = await fetch(nftImageUrl);
+    const imageBlog = await image.blob();
+    const imageURL = URL.createObjectURL(imageBlog);
+    const link = document.createElement('a');
+    link.href = imageURL;
+    link.download = 'Your NFT Robo Avatar.png';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
 };
 
 document.querySelector("form").onsubmit = async event => {
@@ -24559,11 +24574,11 @@ document.querySelector("form").onsubmit = async event => {
     };
 
     try {
-      // const response = await axios.post('https://hcti.io/v1/image', JSON.stringify(payload), headers);
-      // const imgurl = response.data.url;
-      const imgurl = 'https://hcti.io/v1/image/999261bb-2a61-4b79-889c-f1b9b433099c';
+      const response = await _axios.default.post('https://hcti.io/v1/image', JSON.stringify(payload), headers);
+      const imgurl = response.data.url;
       const token = (0, _uuid.v4)();
-      localStorage.setItem('near-martin-5.' + window.accountId, imgurl); // make an update call to the smart contract
+      localStorage.setItem('near-martin-5.' + window.accountId, imgurl);
+      nftImageUrl = imgurl; // make an update call to the smart contract
 
       await window.contract.nft_mint({
         // pass the value that the user entered in the greeting field
@@ -24572,7 +24587,6 @@ document.querySelector("form").onsubmit = async event => {
         metadata: {
           "title": username + "'s Robo Avatar",
           "description": "Minted using https://martintale.github.io/near-challenge-5/",
-          // "media": response.data.url, 
           "media": imgurl,
           "copies": 1
         }
@@ -24643,7 +24657,6 @@ function setAvatar(avatar) {
 
 async function fetchGreeting() {
   const userMadeNFT = localStorage.getItem('near-martin-5.' + window.accountId);
-  console.log(userMadeNFT);
 
   if (userMadeNFT == null) {
     setAvatar(Date.now());
@@ -24652,6 +24665,8 @@ async function fetchGreeting() {
       document.getElementById('your-avatar').style.display = 'none';
     }
   } else {
+    nftImageUrl = userMadeNFT;
+
     if (document.getElementById('new-user')) {
       document.getElementById('new-user').remove();
     }
@@ -24699,7 +24714,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "63056" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "55397" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

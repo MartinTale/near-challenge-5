@@ -24,12 +24,15 @@ html {
 }
 
 #nft-image {
-  width: 512px;
-  height: 512px;
+  width: 400px;
+  height: 400px;
   box-shadow: 0 0 5px #000, 0 0 10px #000, 0 0 15px #000;
   margin-top: 1rem;
+  margin-bottom: 1rem;
 }
-
+#your-avatar {
+  text-align: center;
+}
 #nft-image.hidden {
   display: none;
 }
