@@ -21,10 +21,27 @@ let currentAvatar = Date.now();
 
 let currentColor = '#1e1e1e';
 
+let nftImageUrl = null;
+
 document.getElementById("refresh-avatar").onclick = (e) => {
   e.preventDefault();
   setAvatar(Date.now());
 };
+
+document.getElementById('download').onclick = async () => {
+  if (nftImageUrl) {
+    const image = await fetch(nftImageUrl)
+    const imageBlog = await image.blob()
+    const imageURL = URL.createObjectURL(imageBlog)
+    
+    const link = document.createElement('a')
+    link.href = imageURL
+    link.download = 'Your NFT Robo Avatar.png'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+}
 
 document.querySelector("form").onsubmit = async (event) => {
   event.preventDefault();
@@ -91,6 +108,7 @@ document.querySelector("form").onsubmit = async (event) => {
       const token = v4();
 
       localStorage.setItem('near-martin-5.' + window.accountId, imgurl);
+      nftImageUrl = imgurl;
       
       // make an update call to the smart contract
       await window.contract.nft_mint(
@@ -200,6 +218,7 @@ async function fetchGreeting() {
       document.getElementById('your-avatar').style.display = 'none';
     }
   } else {
+    nftImageUrl = userMadeNFT;
     if (document.getElementById('new-user')) {
       document.getElementById('new-user').remove();
     }
