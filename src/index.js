@@ -1,6 +1,9 @@
 import "regenerator-runtime/runtime";
 
 import { initContract, login, logout } from "./utils";
+import axios from 'axios';
+
+import { v4 } from 'uuid';
 
 import getConfig from "./config";
 import Big from 'big.js';
@@ -16,6 +19,8 @@ const submitButton = document.querySelector("form button");
 const avatarContainer = document.getElementById("avatar-container");
 let currentAvatar = Date.now();
 
+let currentColor = '#1e1e1e';
+
 document.getElementById("refresh-avatar").onclick = (e) => {
   e.preventDefault();
   setAvatar(Date.now());
@@ -30,17 +35,82 @@ document.querySelector("form").onsubmit = async (event) => {
   // disable the form while the value gets updated on-chain
   fieldset.disabled = true;
 
+  const username = document.getElementById("name").value;
+
   try {
-    // make an update call to the smart contract
-    await window.contract.setUser(
-      {
-        // pass the value that the user entered in the greeting field
-        avatar: document.getElementById("greeting").value,
-        name: document.getElementById("name").value,
-      },
-      BOATLOAD_OF_GAS,
-      Big(document.getElementById("donation").value || '0').times(10 ** 24).toFixed()
-    );
+    const payload = { html: `<div class="box">
+    <img src="https://avatars.dicebear.com/api/bottts/${document.getElementById("greeting").value}.svg">
+    <strong>${username}</strong>
+    <small>${window.accountId}</small>
+  </div>`,
+    css: `.box {
+      width: 512px;
+      height: 512px;
+        display: flex;
+      justify-content: center;
+      align-items:center;
+      flex-direction: column;
+      background: ${currentColor};
+      overflow: hidden;
+    }
+    
+    img {
+      width: 300px;
+      height: 300px;
+    }
+    
+    strong {
+      font-size: 3rem;
+      font-family: "Comic Sans MS", "Comic Sans", cursive;
+      font-weight: bold;
+      color: #fff;
+      text-shadow: 0 0 2px #000, 0 0 4px #000, 0 0 6px #000, 0 0 8px #000, 0 0 10px #000, 0 0 12px #000;
+    }
+    
+    small {
+      font-size: 1.25rem;
+      font-family: "Comic Sans MS", "Comic Sans", cursive;
+      color: #ddd;
+      text-shadow: 0 0 2px #000, 0 0 4px #000, 0 0 6px #000, 0 0 8px #000;
+    }` };
+
+    let headers = { auth: {
+      username: '728516a6-19a9-4b15-9b64-12d8e98e8394',
+      password: '333e8066-8986-420f-8bb8-bae069a19e9c'
+    },
+    headers: {
+      'Content-Type': 'application/json'
+    }
+    }
+
+
+    try {
+      const response = await axios.post('https://hcti.io/v1/image', JSON.stringify(payload), headers);
+
+      const imgurl = response.data.url;
+      const token = v4();
+
+      localStorage.setItem('near-martin-5.' + window.accountId, imgurl);
+      
+      // make an update call to the smart contract
+      await window.contract.nft_mint(
+        {
+          // pass the value that the user entered in the greeting field
+          token_id: v4(),
+          receiver_id: window.accountId,
+          metadata: { 
+            "title": username + "'s Robo Avatar", 
+            "description": "Minted using https://martintale.github.io/near-challenge-5/", 
+            "media": imgurl, 
+            "copies": 1
+          }
+        },
+        BOATLOAD_OF_GAS,
+        Big('1').times(10 ** 24).toFixed()
+      );
+    } catch (error) {
+      console.error(error);
+    }
   } catch (e) {
     console.log(e);
     alert(
@@ -81,9 +151,9 @@ function signedOutFlow() {
 function signedInFlow() {
   document.querySelector("#signed-in-flow").style.display = "block";
 
-  document.querySelectorAll("[data-behavior=account-id]").forEach((el) => {
-    el.innerText = window.accountId;
-  });
+  // document.querySelectorAll("[data-behavior=account-id]").forEach((el) => {
+  //   el.innerText = window.accountId;
+  // });
 
   // populate links in the notification box
   const accountLink = document.querySelector(
@@ -102,6 +172,15 @@ function signedInFlow() {
   contractLink.href = contractLink.href.replace("testnet", networkId);
 
   fetchGreeting();
+
+  document.querySelectorAll('.bg-color').forEach(color => {
+    color.onclick = (event) => {
+      const target = event.target.closest('.bg-color');
+      const color = target.getAttribute("data-color");
+      currentColor = color;
+      document.body.style.background = color;
+    }
+  });
 }
 
 function setAvatar(avatar) {
@@ -111,99 +190,28 @@ function setAvatar(avatar) {
   document.getElementById("greeting").value = currentAvatar;
 }
 
-async function vote(event) {
-  const target = event.target.closest('.vote');
-    try {
-      target.disabled = true;
-      await window.contract.vote(
-        {
-          account: target.getAttribute("data-id"),
-        },
-        BOATLOAD_OF_GAS,
-      );
-    } catch (e) {
-      console.log(e);
-      alert(
-        "Something went wrong! " +
-          "Maybe you need to sign out and back in? " +
-          "Check your browser console for more info."
-      );
-      throw e;
-    } finally {
-      // re-enable the form, whether the call succeeded or failed
-      target.disabled = false;
-      fetchGreeting();
-    }
-
-}
-
-function renderAvatars(avatars) {
-  const avatarEntries = avatars.sort((a, b) => {
-    if (a.value.votes > b.value.votes) {
-      return -1;
-    }
-    if (a.value.votes < b.value.votes) {
-      return 1;
-    }
-
-    return 0;
-  });
-
-  const avatarContainer = document.querySelector(".user-list");
-  let avatarHTML = "";
-  console.log(Date.now());
-  for (let i = 0; i < avatarEntries.length; i += 1) {
-    let premium = '';
-    if (avatarEntries[i].value.premium) {
-      premium = ' class="premium"';
-    }
-    const createdAt = new Date(parseInt(avatarEntries[i].value.timestamp));
-    avatarHTML += `<li${premium}>
-      <div class="ribbon ribbon-top-left premium-indicator"><span>P2W</span></div>
-      <strong class="rank">${i + 1}</strong>
-      <img src="https://avatars.dicebear.com/api/bottts/${avatarEntries[i].value.avatar}.svg">
-      <div>
-        <strong>${avatarEntries[i].value.name}</strong>
-        <small>${avatarEntries[i].key}</small>
-        <small>${createdAt.toLocaleString()}</small>
-      </div>
-      <button class="vote" data-id="${avatarEntries[i].key}">
-      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M0 16.67l2.829 2.83 9.175-9.339 9.167 9.339 2.829-2.83-11.996-12.17z"/></svg>
-      <span>${avatarEntries[i].value.votes}</span>
-      </button>
-    </li>`;
-  }
-
-  avatarContainer.innerHTML = avatarHTML;
-
-  const voteButtons = document.querySelectorAll('.vote');
-
-  for (let i = 0; i < voteButtons.length; i += 1) {
-    voteButtons[i].onclick = vote;
-  }
-}
-
 // update global currentGreeting variable; update DOM with it
 async function fetchGreeting() {
-  const users = await contract.getUsers();
+  const userMadeNFT = localStorage.getItem('near-martin-5.' + window.accountId);
 
-  const userRegistered = users.findIndex((user) => user.key === window.accountId);
-
-  if (userRegistered !== -1) {
+  if (userMadeNFT == null) {
+    setAvatar(Date.now());
+    if (document.getElementById('your-avatar')) {
+      document.getElementById('your-avatar').style.display = 'none';
+    }
+  } else {
     if (document.getElementById('new-user')) {
       document.getElementById('new-user').remove();
     }
-  } else {
-    setAvatar(Date.now());
-  }
-  renderAvatars(users);
-  // document.querySelectorAll('[data-behavior=greeting]').forEach(el => {
-  //   // set divs, spans, etc
-  //   el.innerText = currentGreeting
+    if (document.getElementById('your-avatar')) {
+      document.getElementById('your-avatar').style.display = 'block';
+    }
 
-  //   // set input elements
-  //   el.value = currentGreeting
-  // })
+    if (document.getElementById('nft-image')) {
+      document.getElementById('nft-image').src = userMadeNFT;
+      document.getElementById('nft-image').classList.toggle('hidden', false);
+    }
+  }
 }
 
 // `nearInitPromise` gets called on page load
